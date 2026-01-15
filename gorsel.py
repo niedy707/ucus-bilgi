@@ -158,9 +158,12 @@ def harita(ucus, satirlar, iz, dunya, cikti):
         ax.text(b + (1.2 if ha == 'left' else -1.2), e - 1.6, ad, fontsize=10.5, color=MUREKKEP, ha=ha,
                 va='center', fontweight='bold', zorder=6)
     ax.plot(*simdi, 'o', markersize=13, markerfacecolor=MAVI, markeredgecolor=YUZEY, markeredgewidth=2.5, zorder=7)
+    indi = zaman(son.get('indi_utc') or '')
     irtifa = f'{sayi(float(son["irtifa_ft"]) * 0.3048)} m' if son['irtifa_ft'] else ''
     hiz = f'{sayi(float(son["yer_hizi_kt"]) * 1.852)} km/sa' if son['yer_hizi_kt'] else ''
-    ax.annotate(f'Şimdi · {okuma.astimezone(ucus.varis_dilim):%H:%M} {v_ad}\n{irtifa} · {hiz}',
+    kutu = (f'İndi · {indi.astimezone(ucus.varis_dilim):%H:%M} {v_ad}' if indi
+            else f'Şimdi · {okuma.astimezone(ucus.varis_dilim):%H:%M} {v_ad}\n{irtifa} · {hiz}')
+    ax.annotate(kutu,
                 xy=simdi, xytext=(0, -24), textcoords='offset points', ha='center', va='top', fontsize=10.5,
                 color=MUREKKEP, zorder=8,
                 bbox=dict(boxstyle='round,pad=0.35', facecolor=YUZEY, edgecolor='none', alpha=0.9))
@@ -175,11 +178,18 @@ def harita(ucus, satirlar, iz, dunya, cikti):
     kalan_km = float(son['kalan_km']) if son['kalan_km'] else None
     baslik = f'{ucus.etiket} · Tokyo → İstanbul · {okuma.astimezone(ucus.varis_dilim):%H:%M} {v_ad}'
     alt = []
-    if kalan_km is not None:
+    if indi:
+        kalkis = zaman(son['kalkis_utc'])
+        alt.append(f'indi {indi.astimezone(ucus.varis_dilim):%H:%M} {v_ad}')
+        if kalkis:
+            alt.append(f'uçuş süresi {dk_yazi((indi - kalkis).total_seconds() / 60)}')
+        if son['uculan_km']:
+            alt.append(f'uçulan {sayi(float(son["uculan_km"]))} km (kuş uçuşu {sayi(toplam)} km)')
+    elif kalan_km is not None:
         alt.append(f'hedefe kuş uçuşu {sayi(kalan_km)} km (toplam {sayi(toplam)} km)')
-    if esas:
+    if esas and not indi:
         alt.append(f'tahmini iniş {esas.astimezone(ucus.varis_dilim):%H:%M} {v_ad} ({son["esas"]})')
-    if kalan_dk is not None:
+    if kalan_dk is not None and not indi:
         alt.append(f'kalan {dk_yazi(kalan_dk)}')
     fig.text(0.02, 0.97, baslik, fontsize=15, fontweight='bold', color=MUREKKEP, va='top')
     fig.text(0.02, 0.915, ' · '.join(alt), fontsize=11, color=IKINCIL, va='top')
@@ -196,6 +206,9 @@ def grafik(ucus, satirlar, cikti):
     v_ad = ucus.ham['varis'].get('ad', ucus.varis_kod)
     dilim = ucus.varis_dilim
     tablo = [s for s in satirlar if s['okuma_utc']]
+    indi = next((zaman(s['indi_utc']) for s in reversed(tablo) if s.get('indi_utc')), None)
+    if indi:
+        tablo = [s for s in tablo if not s.get('indi_utc')] or tablo
     x = [zaman(s['okuma_utc']).astimezone(dilim).replace(tzinfo=None) for s in tablo]
     seriler = [('fr24_utc', 'Flightradar24 (esas)', MAVI, 2.4), ('gecmis_ort_utc', 'Geçmiş seferlerin ortalaması',
                TURUNCU, 2.0), ('konum_hiz_utc', 'Konum + hız (kaba)', SU, 2.0)]
@@ -211,6 +224,8 @@ def grafik(ucus, satirlar, cikti):
             gecmis = json.load(f)['seferler'][:20]
     except FileNotFoundError:
         gecmis = []
+    if kalkis:
+        gecmis = [g for g in gecmis if abs(g['kalkis_ts'] - kalkis.timestamp()) > 3600]
     if kalkis and gecmis:
         sureler = [(g['varis_ts'] - g['kalkis_ts']) / 60 for g in gecmis]
         alt_s = (kalkis + timedelta(minutes=min(sureler))).astimezone(dilim).replace(tzinfo=None)
@@ -218,6 +233,11 @@ def grafik(ucus, satirlar, cikti):
         ax.axhspan(alt_s, ust_s, color=TURUNCU, alpha=0.08, zorder=0, linewidth=0)
         ax.text(x[0], ust_s, f'  geçmiş {len(gecmis)} seferin iniş aralığı (bugünkü kalkışla)', fontsize=9,
                 color=IKINCIL, va='bottom')
+
+    if indi:
+        iy = indi.astimezone(dilim).replace(tzinfo=None)
+        ax.hlines(iy, x[0], x[-1], color=MUREKKEP, linewidth=1.4, zorder=2)  # etiket sütununa taşmasın
+        ax.text(x[0], iy, f'  Gerçek iniş {iy:%H:%M}', fontsize=10, color=MUREKKEP, va='top', fontweight='bold')
 
     tarife = ucus.plan_varis.astimezone(dilim).replace(tzinfo=None)
     ax.axhline(tarife, color=SOLUK, linewidth=1.2, linestyle=(0, (4, 3)), zorder=1)
