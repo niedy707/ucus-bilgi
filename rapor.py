@@ -23,6 +23,7 @@ Kullanım:
   rapor.py --bildir      raporu Bark ile de gönder (bildirim.py)
   UCUS_TANIM=baska.json  başka bir uçuş tanımı
 """
+import csv
 import json
 import os
 import statistics
@@ -90,6 +91,45 @@ def gecmis_ozet(seferler):
     return {'sayi': len(son), 'ort': statistics.mean(sureler), 'ortanca': statistics.median(sureler),
             'min': min(sureler), 'max': max(sureler),
             'gecikme': statistics.mean(gecikmeler) if gecikmeler else None, 'son': son}
+
+
+# ── İzlem (grafik ve harita için; gorsel.py okur) ───────────────────────────
+IZLEM_ALANLAR = ['okuma_utc', 'kalkis_utc', 'esas', 'esas_inis_utc', 'fr24_utc', 'havalimani_utc', 'gecmis_ort_utc',
+                 'konum_hiz_utc', 'tarife_utc', 'lat', 'lon', 'irtifa_ft', 'yer_hizi_kt', 'kalan_km', 'uculan_km',
+                 'indi_utc']
+
+
+def izlem_yolu(ucus, uzanti):
+    return os.path.join(k.KOK, 'veri', 'izlem', f'{ucus.etiket}-{ucus.plan_kalkis:%Y-%m-%d}{uzanti}')
+
+
+def izlem_kaydet(ucus, simdi, kalkis, adaylar, esas_ad, esas, inis, konum, kalan_km, uculan, fr):
+    """Her okumayı veri/izlem/<etiket>-<gün>.csv'ye bir satır ekler; FR24 izini -iz.json'a yazar."""
+    z = lambda t: t.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%MZ') if t else ''  # noqa: E731
+    aday = lambda bas: next((t for ad, t in adaylar if ad.startswith(bas)), None)  # noqa: E731
+    satir = {
+        'okuma_utc': z(simdi), 'kalkis_utc': z(kalkis), 'esas': esas_ad, 'esas_inis_utc': z(esas),
+        'fr24_utc': z(aday('Flightradar24')), 'havalimani_utc': z(aday('İstanbul')),
+        'gecmis_ort_utc': z(aday('Geçmiş')), 'konum_hiz_utc': z(aday('Konum')), 'tarife_utc': z(ucus.plan_varis),
+        'lat': f'{konum["lat"]:.3f}' if konum else '', 'lon': f'{konum["lon"]:.3f}' if konum else '',
+        'irtifa_ft': konum['alt'] if konum and konum['alt'] else '',
+        'yer_hizi_kt': konum['gs'] if konum and konum['gs'] else '',
+        'kalan_km': round(kalan_km) if kalan_km is not None else '',
+        'uculan_km': round(uculan) if uculan is not None else '', 'indi_utc': z(inis),
+    }
+    yol = izlem_yolu(ucus, '.csv')
+    os.makedirs(os.path.dirname(yol), exist_ok=True)
+    yeni = not os.path.exists(yol)
+    with open(yol, 'a', encoding='utf-8', newline='') as f:
+        yaz = csv.DictWriter(f, IZLEM_ALANLAR)
+        if yeni:
+            yaz.writeheader()
+        yaz.writerow(satir)
+    if fr and fr['iz']:
+        with open(izlem_yolu(ucus, '-iz.json'), 'w', encoding='utf-8') as f:
+            json.dump({'okuma_utc': z(simdi), 'iz': [[round(p[0], 3), round(p[1], 3), p[2], p[3], p[4]]
+                                                      for p in fr['iz']]}, f, separators=(',', ':'))
+            f.write('\n')
 
 
 # ── Rapor ───────────────────────────────────────────────────────────────────
@@ -217,6 +257,7 @@ def rapor(ucus, simdi, gecmis_tablo=False):
     kisa_ozet = (f'İniş {vs(esas)} {v_ad} ({esas_ad})' if not inis else f'İndi {vs(inis)} {v_ad}')
     if kalkis and not inis:
         kisa_ozet += f' · kalan {dk_yazi((esas - simdi).total_seconds() / 60)}'
+    izlem_kaydet(ucus, simdi, kalkis, adaylar, esas_ad, esas, inis, konum, kalan_km, uculan, fr)
     return '\n'.join(s), kisa_ozet
 
 
