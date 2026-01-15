@@ -1,0 +1,7 @@
+# ucus-takip — /etc/cron.d/ucus-takip (VPS ya da pi63). Uçuş: /opt/ucus-takip/ucus.json.
+# takip.py iniş + 90 dk'da (en geç ucus.json "son_sinir") bu dosyayı KENDİSİ siler ve Bark ile haber verir.
+# Kaynak: github.com/niedy707/ucus-bilgi · kurulum: README.md § Takip · log: /var/log/ucus-takip.log
+# Bark: varsayılan /root/scripts/bark.sh; yoksa aşağıdaki satıra UCUS_TAKIP_BARK_URL=https://api.day.app/<anahtar> ekle.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOME=/root
+* * * * * root flock -n /run/ucus-takip.lock timeout -k 10 100 /usr/bin/python3 /opt/ucus-takip/takip.py >> /var/log/ucus-takip.log 2>&1

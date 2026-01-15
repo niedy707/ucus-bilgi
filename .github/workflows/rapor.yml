@@ -1,0 +1,39 @@
+# Uçuşun anlık durum raporu (rapor.py). Elle ya da Claude oturumundan (actions_run_trigger) tetiklenir;
+# rapor iş özetinde ve günlükte görünür. Geçmiş sefer önbelleği (veri/) değişirse depoya işlenir.
+name: rapor
+on:
+  workflow_dispatch:
+    inputs:
+      tablo:
+        description: Geçmiş seferleri sefer sefer de yaz
+        type: boolean
+        default: false
+      bildir:
+        description: Raporu Bark ile gönder (depo sırrı BARK_URL gerekir)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ['*.py', 'ucus.json', '.github/workflows/rapor.yml']
+permissions:
+  contents: write
+concurrency:
+  group: rapor
+  cancel-in-progress: false
+jobs:
+  rapor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rapor
+        env:
+          UCUS_TAKIP_BARK_URL: ${{ secrets.BARK_URL }}
+        run: python3 rapor.py ${{ inputs.tablo && '--gecmis' || '' }} ${{ inputs.bildir && '--bildir' || '' }}
+      - name: Geçmiş önbelleğini kaydet
+        run: |
+          git add veri
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m 'veri: geçmiş sefer önbelleği'
+          git push -q || { git pull -q --rebase && git push -q; }
