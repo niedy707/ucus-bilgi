@@ -142,7 +142,7 @@ def harita(ucus, satirlar, iz, dunya, cikti):
         if bmin < b < bmax and emin < e < emax and not (abs(b - simdi[0]) < 9 and -6 < e - simdi[1] < 2):
             ax.text(b, e, ad, fontsize=9, color=SOLUK, ha='center', va='center', zorder=2)
     for b, e, ad in DENIZ_ADLARI:
-        if bmin < b < bmax and emin < e < emax:
+        if bmin < b < bmax and emin < e < emax and not (abs(b - simdi[0]) < 9 and -6 < e - simdi[1] < 2):
             ax.text(b, e, ad, fontsize=8.5, color=DENIZ_YAZI, ha='center', va='center', style='italic', zorder=2)
 
     # Hedefe kalan kuş uçuşu yol (kesikli), uçulan iz (düz)
