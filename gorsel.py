@@ -223,6 +223,7 @@ def grafik(ucus, satirlar, cikti):
     ax.axhline(tarife, color=SOLUK, linewidth=1.2, linestyle=(0, (4, 3)), zorder=1)
     ax.text(x[-1], tarife, f'  Tarife {tarife:%H:%M}', fontsize=10, color=IKINCIL, va='bottom', ha='left')
 
+    uclar = []  # (son x, son y, kısa ad) — çizgi sonu etiketleri, çakışmasın diye sonra yerleştirilir
     for alan, ad, renk, kalinlik in seriler:
         noktalar = [(xx, zaman(s[alan]).astimezone(dilim).replace(tzinfo=None))
                     for xx, s in zip(x, tablo) if s[alan]]
@@ -231,8 +232,19 @@ def grafik(ucus, satirlar, cikti):
         xs, ys = zip(*noktalar)
         ax.plot(xs, ys, color=renk, linewidth=kalinlik, marker='o', markersize=6.5, markeredgecolor=YUZEY,
                 markeredgewidth=1.5, label=ad, zorder=3)
-        ax.annotate(f'{ys[-1]:%H:%M}', xy=(xs[-1], ys[-1]), xytext=(8, 0), textcoords='offset points',
-                    fontsize=10.5, color=MUREKKEP, va='center', fontweight='bold')
+        uclar.append((xs[-1], ys[-1], ad.split(' (')[0].replace('Geçmiş seferlerin ortalaması', 'Geçmiş ort.')))
+
+    # Çizgi sonu etiketleri: yukarıdan aşağı dizilir, aralarında en az bir satır boşluk kalır
+    ax.set_xlim(x[0] - (x[-1] - x[0]) * 0.03, x[-1] + (x[-1] - x[0]) * 0.22)
+    fig.canvas.draw()
+    satir_px = 10.5 * 1.35 * fig.dpi / 72
+    yer = []
+    for xx, yy, ad in sorted(uclar, key=lambda u: u[1], reverse=True):
+        px = ax.transData.transform((mdates.date2num(xx), mdates.date2num(yy)))[1]
+        hedef = min(px, yer[-1] - satir_px) if yer else px
+        yer.append(hedef)
+        ax.annotate(f'{ad} {yy:%H:%M}', xy=(xx, yy), xytext=(8, (hedef - px) * 72 / fig.dpi),
+                    textcoords='offset points', fontsize=10.5, color=MUREKKEP, va='center', fontweight='bold')
 
     ax.yaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
@@ -244,8 +256,6 @@ def grafik(ucus, satirlar, cikti):
     ax.spines['bottom'].set_color('#c9c8c2')
     ax.tick_params(colors=IKINCIL, labelsize=9.5, length=0)
     ax.set_xlabel(f'Okuma saati ({v_ad})', color=IKINCIL, fontsize=10)
-    sag = x[-1] + (x[-1] - x[0]) * 0.18
-    ax.set_xlim(x[0] - (x[-1] - x[0]) * 0.03, sag)
     fig.text(0.015, 0.965, f'{ucus.etiket} · Tahmini iniş saati nasıl değişti ({v_ad})', fontsize=14,
              fontweight='bold', color=MUREKKEP, va='top')
     fig.text(0.015, 0.905, 'Her nokta bir okuma; çizgi sonundaki saat en son tahmin', fontsize=10.5,
