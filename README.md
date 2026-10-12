@@ -23,11 +23,13 @@ durur; her bölümün başında **tarih, uçuş ve kabin sınıfı** yazar. Yeni
 | Dosya | İş |
 |---|---|
 | [`rapor.py`](rapor.py) | **Anlık durum raporu.** Kalkış, geçen süre, tahmini uçuş süresi, yüzde, kalan süre, tahmini iniş, konum, geçmiş sefer ortalaması. Tek seferlik okuma. |
+| [`gorsel.py`](gorsel.py) | **Harita ve grafik (PNG).** Uçulan iz, şimdiki konum ve kalan yol haritası; okuma saatine göre tahmini iniş grafiği (FR24, geçmiş ortalama, konum+hız, tarife). `veri/izlem/`'den okur; matplotlib ve world-atlas TopoJSON'u ister (betiğin başında). |
 | [`takip.py`](takip.py) | **Değişiklik takipçisi.** Kapı, terminal, saat, gecikme, iptal, kalkış, iniş tahmini (≥5 dk), iniş ve bagaj bandı değişince **Bark** gönderir. Cron'dan dakikada bir koşar, iş bitince kendini kaldırır. |
 | [`kaynaklar.py`](kaynaklar.py) | Veri okuyucular: Haneda, İstanbul Havalimanı, Flightradar24 (canlı + geçmiş), ADS-B (adsb.lol). |
 | [`bildirim.py`](bildirim.py) | Bark: `UCUS_TAKIP_BARK_URL` (HTTP) ya da `/root/scripts/bark.sh`. |
 | [`ucus.json`](ucus.json) | **İzlenen uçuşun tanımı.** Yeni uçuş için yalnız bu değişir. |
 | `veri/` | Geçmiş sefer önbelleği (FR24 yalnız ~7 gün veriyor; burada birikir). Actions kendisi işler. |
+| `veri/izlem/` | Her rapor okumasının satırı (`<etiket>-<gün>.csv`) ve FR24 izi (`-iz.json`); Actions işler. gorsel.py bunları çizer. |
 | [`.github/workflows/rapor.yml`](.github/workflows/rapor.yml) | Raporu GitHub Actions'ta üretir (elle ya da Claude'dan tetiklenir). |
 | [`kurulum/ucus-takip.cron`](kurulum/ucus-takip.cron) | takip.py için `/etc/cron.d` dosyası. |
 | `testler/` | Taklit veriyle senaryolar: `python3 testler/takip_senaryo.py`, `python3 testler/rapor_senaryo.py --gecmis`. |
