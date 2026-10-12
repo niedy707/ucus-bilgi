@@ -2,6 +2,12 @@
  "aciklama": "Tamamlanmış seferler (FR24 gerçek kalkış/iniş, UTC epoch). rapor.py --gecmis yazar.",
  "seferler": [
   {
+   "kalkis_ts": 1791762600,
+   "varis_ts": 1791806557,
+   "plan_kalkis_ts": 1791761100,
+   "tescil": "JA805A"
+  },
+  {
    "kalkis_ts": 1791589303,
    "varis_ts": 1791634962,
    "plan_kalkis_ts": 1791588300,
