@@ -1,0 +1,12 @@
+{
+  "aciklama": "Takip edilen uçuş. Saatler ilgili havalimanının yerel saatiyle. 'ad' raporda saat diliminin adı. nabiz: takip.py'nin durum özeti attığı an; son_sinir: takip.py'nin en geç kapandığı an.",
+  "etiket": "NH219",
+  "havayolu": "ANA",
+  "iata": "NH",
+  "icao": "ANA",
+  "numara": "219",
+  "kalkis": {"iata": "HND", "dilim": "Asia/Tokyo", "ad": "Tokyo", "plan": "2026-10-12T08:25"},
+  "varis": {"iata": "IST", "dilim": "Europe/Istanbul", "ad": "TR", "plan": "2026-10-12T15:35"},
+  "nabiz": "2026-10-12T04:45:00+09:00",
+  "son_sinir": "2026-10-13T06:00:00Z"
+}
